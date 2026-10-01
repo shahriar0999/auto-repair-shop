@@ -1,0 +1,150 @@
+---
+import Base from '@/layouts/Base.astro';
+import SearchBox from '@/components/SearchBox.astro';
+import { allShops, byState, byCity } from '@/lib/shops';
+import { networks, type NetworkKey } from '@/lib/networks';
+import { US_50 } from '@/lib/states';
+import { faqGroups, allFaqs } from '@/data/faqs';
+import { SITE } from '@/lib/site';
+
+const TOP = 10;
+const shops = allShops();
+const stats = (list: typeof shops) => ({
+  locations: list.length,
+  states: new Set(list.filter((s) => US_50.has(s.state)).map((s) => s.state)).size,
+  cities: new Set(list.map((s) => `${s.stateSlug}/${s.citySlug}`)).size,
+});
+
+const panels = (Object.keys(networks) as NetworkKey[])
+  .map((key) => {
+    const list = shops.filter((s) => s.network === key);
+    const groups = [...byState(list)];
+    const inUS50 = groups.filter(([, l]) => US_50.has(l[0].state));
+    const byCount = [...inUS50].sort((a, b) => b[1].length - a[1].length);
+    const top = byCount.slice(0, TOP);
+    const topSlugs = new Set(top.map(([slug]) => slug));
+    const rest = inUS50.filter(([slug]) => !topSlugs.has(slug)).sort((a, b) => a[1][0].stateName.localeCompare(b[1][0].stateName));
+    return {
+      key, meta: networks[key], list, top, rest,
+      extra: groups.filter(([, l]) => !US_50.has(l[0].state)),
+      popular: [...byCity(list).values()].sort((a, b) => b.length - a.length).slice(0, 8),
+    };
+  })
+  .filter((p) => p.list.length > 0);
+
+const allStats = { all: stats(shops), ...Object.fromEntries(panels.map((p) => [p.key, stats(p.list)])) };
+
+const title = 'Auto Repair Shop Near Me: AAA Approved & Toyota Shops';
+const description = 'Find an auto repair shop near me: browse AAA approved auto repair shops and Toyota dealership service centers by city, with hours, services and directions.';
+const faqLd = {
+  '@context': 'https://schema.org', '@type': 'FAQPage',
+  mainEntity: allFaqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+};
+const siteLd = { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE.name, url: Astro.site?.href, description };
+---
+<Base title={title} description={description} jsonLd={[siteLd, faqLd]}>
+  <section class="hero">
+    <h1>Auto Repair Shop Near Me<span class="h1-sub">AAA Approved and Toyota dealership service centers</span></h1>
+    <p>Search AAA approved auto repair shops and Toyota dealership service centers by city, with hours, services and directions where available.</p>
+    <SearchBox />
+    <div class="stats" id="stats" data-stats={JSON.stringify(allStats)}>
+      <span><b data-stat="locations">{allStats.all.locations.toLocaleString()}</b> locations</span>
+      <span><b data-stat="states">{allStats.all.states}</b> states</span>
+      <span><b data-stat="cities">{allStats.all.cities.toLocaleString()}</b> cities</span>
+    </div>
+  </section>
+
+  <div id="browse">
+  {panels.map((p) => (
+    <section data-panel={p.key} class="net-block">
+      <h2>{p.meta.listing}</h2>
+      <h3 class="sub">Browse by state</h3>
+      <ul class="tiles">
+        {p.top.map(([slug, list]) => (
+          <li><a class="tile" href={`/${p.key}/${slug}/`}><span class="tile-name">{list[0].stateName}</span><span class="muted">{list.length} {p.meta.noun}{list.length === 1 ? '' : 's'}</span></a></li>
+        ))}
+      </ul>
+      {(p.rest.length > 0 || p.extra.length > 0) && (
+        <details class="more">
+          <summary class="btn ghost"><span class="m-closed">Show {p.rest.length} more states</span><span class="m-open">Show fewer</span></summary>
+          <ul class="tiles">
+            {p.rest.map(([slug, list]) => (
+              <li><a class="tile" href={`/${p.key}/${slug}/`}><span class="tile-name">{list[0].stateName}</span><span class="muted">{list.length} {p.meta.noun}{list.length === 1 ? '' : 's'}</span></a></li>
+            ))}
+          </ul>
+          {p.extra.length > 0 && (
+            <p class="muted also">Also: {p.extra.map(([slug, l], i) => (<><a href={`/${p.key}/${slug}/`}>{l[0].stateName}</a>{i < p.extra.length - 1 ? ', ' : ''}</>))}</p>
+          )}
+        </details>
+      )}
+      <h3 class="sub">Popular cities</h3>
+      <ul class="chips">
+        {p.popular.map((l) => (<li><a href={`/${p.key}/${l[0].stateSlug}/${l[0].citySlug}/`}>{l[0].city}, {l[0].state} <span class="muted">{l.length}</span></a></li>))}
+      </ul>
+    </section>
+  ))}
+  </div>
+
+  <section class="prose" id="about">
+    <h2>Find an auto repair shop near me, city by city</h2>
+    <p>Searching for an auto repair shop near me usually returns a wall of ads, map pins and star ratings that are hard to compare. Repair Finder is an independent directory that narrows the field to two kinds of locations: AAA Approved Auto Repair shops and Toyota dealership service centers. Choose a network, type your city or a shop name, and open a page that lists every location we have for that city, with its address, phone number and map.</p>
+    <p>Each shop page is built from the details published for that location. Where they are available you will see weekly hours, an open now indicator based on the shop's local time, the repair services offered, the vehicle brands serviced and the AAA member discount the shop lists. Directions open in your maps app, and the Call button dials the shop directly. When a detail is missing, the page leaves it out instead of guessing. You can <a href="#browse">browse by state</a> or use the search box at the top of this page.</p>
+
+    <h2>AAA auto repair shop locator and finder</h2>
+    <p>If you want an AAA auto repair shop, it helps to know what the badge means. AAA Approved Auto Repair facilities are inspected by AAA and are expected to employ ASE-certified or factory-trained technicians, carry proper insurance, keep a clean and organized facility and earn good customer satisfaction results. AAA also helps resolve disputes between members and approved shops. That is why many drivers treat AAA auto repair as a shortcut to a shop they can trust.</p>
+    <p>This page works as an AAA auto repair shop locator and AAA auto repair shop finder for drivers who want a quick list by city. Searching for an AAA auto repair shop near me? Open your city and compare the approved shops side by side. If you need the closest AAA auto repair shop, start with your own city, then check neighboring cities, because shops are grouped by the city in their address. AAA auto service covers far more than roadside help, and approved repair shops are a big part of it. We are independent, so confirm a shop's current status with AAA before you book.</p>
+    <p>Benefits vary by AAA club and by shop, so read the AAA auto repair shop discounts on each shop page and ask before you pay. AAA describes a repair warranty of 24 months or 24,000 miles at approved facilities, plus a labor discount for members, commonly 10 percent with a dollar cap that depends on where you live. Show your membership card at the time of service. If AAA auto repair near me returns nothing in a small town, try the next city over.</p>
+
+    <h2>Toyota auto repair shops near me</h2>
+    <p>Many drivers prefer a dealership for warranty work, recalls and model-specific diagnostics. If you are searching for a Toyota auto repair shop near me, our Toyota listings cover dealership service centers across the country. Search Toyota auto repair near me by city, see the address and phone number, and open directions. Toyota auto repair shops near me are not all alike: a dealer service department works from factory procedures and genuine parts, while an independent AAA approved shop often costs less for routine jobs.</p>
+    <p>For Toyota auto repair services such as scheduled maintenance, brakes, batteries, hybrid system checks and recall work, call the dealer first and ask about price, wait time and whether you need an appointment. Not near a dealership? Many AAA shops service Toyota vehicles, and the vehicles serviced list on each shop page shows which brands the shop works on. Whichever you pick, a Toyota auto repair shop with certified technicians and a written warranty is a safe bet, and Toyota auto repair is easier to budget for when you compare two estimates.</p>
+
+    <h2>How to choose a good auto repair shop near me</h2>
+    <p>A good auto repair shop near me explains the problem clearly, gives you a written estimate and stands behind its work. Whether you are hunting for the best auto repair shop near me or a cheap auto repair shop near me, the same checklist applies.</p>
+    <ul>
+      <li><strong>Check certifications.</strong> A certified auto repair shop near me should employ ASE-certified or factory-trained technicians for the work you need.</li>
+      <li><strong>Ask about the warranty.</strong> Twelve months and 12,000 miles is a common minimum, and AAA approved shops advertise 24 months or 24,000 miles.</li>
+      <li><strong>Get the estimate in writing,</strong> with parts and labor listed separately, and ask the shop to call before doing extra work.</li>
+      <li><strong>Compare two quotes</strong> for any job over a few hundred dollars. The lowest price is not always the best value if the repair fails in three months.</li>
+      <li><strong>Read recent reviews</strong> on independent sites and look at how the shop handles problems, not only the star rating.</li>
+    </ul>
+    <p>We do not rank shops or publish prices, so you will not find a best or cheapest label here. You will find the same set of facts for every location, which makes it easier to compare and decide.</p>
+
+    <h2>Open now, mobile and do-it-yourself shops</h2>
+    <p>Auto repair shop near me open now is one of the most common searches. On shop pages that list hours, we show whether the shop is open right now and when it closes or opens next, using the shop's own time zone rather than yours. Hours come from the listing and can change on holidays, so call before you drive over.</p>
+    <p>Two other searches deserve an honest note. A mobile auto repair shop near me, meaning a mechanic who comes to your driveway, can handle batteries, brakes and basic diagnostics, but mobile mechanics are not part of this directory. A do it yourself auto repair shop near me, usually a rent-a-bay garage with lifts and tools, is not listed here either. Both can work for simple jobs. For complex repairs, warranty claims or anything safety related, a full-service shop with certified technicians is usually the safer choice.</p>
+
+    <h2>Transmission, AC and electrical repairs</h2>
+    <p>Shop pages list the repair services each location reports, such as air conditioning, brakes, electrical, cooling and radiator, steering and suspension, tires, oil changes and manual or automatic transmissions. If you need a transmission auto repair shop near me, an AC auto repair shop near me or an electrical auto repair shop near me, open your city page and check the services on each shop page before you call. Specialist work such as transmission rebuilds and electrical diagnosis is not offered everywhere, so one quick call can save a wasted trip.</p>
+
+    <h2>Own a shop? The AAA auto repair shop application</h2>
+    <p>Shop owners often ask about the AAA auto repair shop application. Approval is handled by AAA and your regional AAA club, not by this site, and it involves an on-site inspection, technician certifications and customer feedback. Contact your local AAA club to start. Each page on this site shows when its details were last checked.</p>
+  </section>
+
+  <section class="faq" id="faq">
+    <h2>Frequently asked questions about auto repair shops</h2>
+    {faqGroups.map((g) => (
+      <>
+        <h3 class="sub">{g.title}</h3>
+        {g.items.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </>
+    ))}
+  </section>
+
+  <script>
+    const statsEl = document.getElementById('stats')!;
+    const all = JSON.parse(statsEl.dataset.stats!);
+    window.addEventListener('networkchange', (e) => {
+      const n = (e as CustomEvent<string>).detail;
+      document.querySelectorAll<HTMLElement>('[data-panel]').forEach((p) => { p.hidden = !(n === 'all' || p.dataset.panel === n); });
+      const s = all[n];
+      if (s) for (const k of ['locations', 'states', 'cities'])
+        statsEl.querySelector(`[data-stat="${k}"]`)!.textContent = s[k].toLocaleString();
+    });
+  </script>
+</Base>

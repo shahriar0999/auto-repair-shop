@@ -1,0 +1,93 @@
+---
+import Base from '@/layouts/Base.astro';
+import ShopMap from '@/components/ShopMap.astro';
+import ShopRow from '@/components/ShopRow.astro';
+import { allShops } from '@/lib/shops';
+import { networks } from '@/lib/networks';
+import { DAYS, parseRange, hhmm } from '@/lib/hours';
+import { shopSeo } from '@/lib/seo';
+
+export function getStaticPaths() {
+  const shops = allShops();
+  return shops.map((s) => ({
+    params: { network: s.network, state: s.stateSlug, city: s.citySlug, shop: s.slug },
+    props: { shop: s, nearby: shops.filter((o) => o.id !== s.id && o.citySlug === s.citySlug && o.stateSlug === s.stateSlug).slice(0, 4) },
+  }));
+}
+const { shop: s, nearby } = Astro.props;
+const net = networks[s.network as keyof typeof networks];
+const address = `${s.address1}, ${s.city}, ${s.state} ${s.zip}`;
+const seo = shopSeo(s.network, s.name, s.city, s.state, address);
+const directions = s.lat && s.lng
+  ? `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`
+  : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+
+const hoursList = DAYS.filter((d) => s.hours?.[d]).map((d) => [d, s.hours![d]] as const);
+const hasDetails = Boolean(s.phone || s.services.length || hoursList.length);
+const spec = hoursList.flatMap(([d, t]) => {
+  const r = parseRange(t);
+  return r ? [{ '@type': 'OpeningHoursSpecification', dayOfWeek: d, opens: hhmm(r.open), closes: hhmm(r.close) }] : [];
+});
+const jsonLd = {
+  '@context': 'https://schema.org', '@type': s.network === 'toyota' ? ['AutoDealer', 'AutoRepair'] : 'AutoRepair', name: s.name,
+  address: { '@type': 'PostalAddress', streetAddress: s.address1, addressLocality: s.city, addressRegion: s.state, postalCode: s.zip, addressCountry: 'US' },
+  ...(s.phone && { telephone: s.phone }), ...(s.website && { url: s.website }),
+  ...(s.lat && s.lng && { geo: { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lng } }),
+  ...(spec.length > 0 && { openingHoursSpecification: spec }),
+};
+---
+<Base title={seo.title} description={seo.description} jsonLd={jsonLd} noindex={!hasDetails}
+  crumbs={[{ label: net.short }, { label: s.stateName, href: `/${s.network}/${s.stateSlug}/` }, { label: s.city, href: `/${s.network}/${s.stateSlug}/${s.citySlug}/` }, { label: s.name }]}>
+  <div class="shop">
+    <div>
+      <h1>{s.name}</h1>
+      <p class="muted">{address}</p>
+      <p class="status" id="open-status" role="status" hidden></p>
+      <div class="actions">
+        {s.phone && <a class="btn" href={`tel:${s.phone}`}>Call {s.phone}</a>}
+        <a class="btn ghost" href={directions} rel="noopener" target="_blank">Get directions</a>
+        {s.website && <a class="btn ghost" href={s.website} rel="noopener nofollow" target="_blank">Website</a>}
+      </div>
+      {!hoursList.length && !s.services.length && <p class="muted">Hours and services aren't listed for this location yet.{s.phone ? ' Call to confirm.' : ''}</p>}
+      {s.services.length > 0 && (<><h2>Repair services</h2><ul class="tags">{s.services.map((x) => <li>{x}</li>)}</ul></>)}
+      {s.vehicles.length > 0 && (
+        <details class="fold" open={s.vehicles.length <= 12}>
+          <summary><h2>Vehicles serviced ({s.vehicles.length})</h2></summary>
+          <ul class="tags">{s.vehicles.map((x) => <li>{x}</li>)}</ul>
+        </details>
+      )}
+    </div>
+    <aside>
+      {s.lat && s.lng && <ShopMap lat={s.lat} lng={s.lng} name={s.name} />}
+      {hoursList.length > 0 && (
+        <div class="panel" id="hours-panel" data-tz={s.tz} data-hours={JSON.stringify(s.hours)}>
+          <h2>Hours</h2>
+          <dl class="hours">{hoursList.map(([d, t]) => (<div class="hrow" data-day={d}><dt>{d}</dt><dd>{t}</dd></div>))}</dl>
+          {s.tz && <p class="muted" style="font-size:.85rem;margin:.75rem 0 0">Local time at the shop</p>}
+        </div>
+      )}
+      {s.discount && (
+        <div class="panel" style="margin-top:1rem">
+          <h3>Member discount</h3>
+          <p>{s.discount}</p>
+          {s.discountExclusions && <details class="fold"><summary>Exclusions</summary><p class="muted">{s.discountExclusions.replace(/^Exclusions:\s*/i, '')}</p></details>}
+        </div>
+      )}
+      <p class="muted" style="font-size:.85rem">Last checked {s.lastVerified}. <a href={s.sourceUrl} rel="noopener nofollow">Confirm on the official site</a>.</p>
+    </aside>
+  </div>
+  {nearby.length > 0 && (<><h2 style="margin-top:3rem">Other {net.noun}s in {s.city}</h2><ul class="rows">{nearby.map((n) => <li><ShopRow shop={n} /></li>)}</ul></>)}
+
+  <script>
+    import { openStatus } from '@/lib/hours';
+    const panel = document.getElementById('hours-panel');
+    if (panel) {
+      const st = openStatus(JSON.parse(panel.dataset.hours!), panel.dataset.tz);
+      const el = document.getElementById('open-status');
+      if (st && el) {
+        el.textContent = st.label; el.dataset.open = String(st.open); el.hidden = false;
+        panel.querySelector(`[data-day="${st.today}"]`)?.classList.add('today');
+      }
+    }
+  </script>
+</Base>

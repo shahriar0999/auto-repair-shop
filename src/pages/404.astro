@@ -1,0 +1,16 @@
+---
+import Base from '@/layouts/Base.astro';
+import SearchBox from '@/components/SearchBox.astro';
+---
+<Base title="Page Not Found | Repair Finder" description="The page you are looking for could not be found. Search for an auto repair shop near you or return to the home page." noindex>
+  <section class="hero">
+    <p class="muted">Error 404</p>
+    <h1>Page not found</h1>
+    <p>The page may have moved, or the address may have a typo. Search for a city or shop below, or go back to the home page.</p>
+    <SearchBox />
+    <div class="actions">
+      <a class="btn" href="/">Back to home</a>
+      <a class="btn ghost" href="/#browse">Browse by state</a>
+    </div>
+  </section>
+</Base>

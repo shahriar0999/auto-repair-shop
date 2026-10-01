@@ -1,0 +1,49 @@
+---
+import Base from '@/layouts/Base.astro';
+import ShopRow from '@/components/ShopRow.astro';
+import { allShops } from '@/lib/shops';
+import { networks } from '@/lib/networks';
+import { citySeo } from '@/lib/seo';
+
+export function getStaticPaths() {
+  const shops = allShops();
+  return [...new Set(shops.map((s) => `${s.network}/${s.stateSlug}/${s.citySlug}`))].map((k) => {
+    const [network, state, city] = k.split('/');
+    return { params: { network, state, city }, props: { list: shops.filter((s) => s.network === network && s.stateSlug === state && s.citySlug === city).sort((a, b) => a.name.localeCompare(b.name)) } };
+  });
+}
+const { list } = Astro.props;
+const { network, state } = Astro.params;
+const { city, state: st, stateName } = list[0];
+const net = networks[network as keyof typeof networks];
+const count = `${list.length} ${net.noun}${list.length === 1 ? '' : 's'}`;
+const seo = citySeo(network!, city, st, list.length);
+---
+<Base title={seo.title} description={seo.description} crumbs={[{ label: net.short }, { label: stateName, href: `/${network}/${state}/` }, { label: city }]}>
+  <h1 style="font-size:clamp(2rem,1.3rem + 3vw,3.25rem)">{net.listing} in {city}, {st}</h1>
+  <p class="intro">{seo.intro}</p>
+
+  <div class="toolbar">
+    <label class="filter">
+      <span class="sr">Filter by name or street</span>
+      <input id="filter" type="search" placeholder="Filter by name or street" />
+    </label>
+    <span class="muted" id="count" role="status">{count}</span>
+  </div>
+
+  <ul class="rows" id="rows">
+    {list.map((s) => <li data-q={`${s.name} ${s.address1}`.toLowerCase()}><ShopRow shop={s} /></li>)}
+  </ul>
+  <p class="muted" id="empty" hidden>Nothing matches your filter. Clear it to see all {list.length}.</p>
+
+  <script define:vars={{ noun: net.noun }}>
+    const f = document.getElementById('filter');
+    const items = [...document.querySelectorAll('#rows li')];
+    const count = document.getElementById('count'), empty = document.getElementById('empty');
+    f.addEventListener('input', () => {
+      const q = f.value.trim().toLowerCase(); let n = 0;
+      for (const li of items) { const ok = !q || li.dataset.q.includes(q); li.hidden = !ok; if (ok) n++; }
+      count.textContent = `${n} ${noun}${n === 1 ? '' : 's'}`; empty.hidden = n > 0;
+    });
+  </script>
+</Base>

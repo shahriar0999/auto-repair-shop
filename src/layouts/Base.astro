@@ -1,0 +1,106 @@
+---
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/figtree';
+import '../styles/global.css';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import { networks } from '@/lib/networks';
+import { SITE } from '@/lib/site';
+
+interface Crumb { label: string; href?: string }
+interface Props {
+  title: string; description: string;
+  jsonLd?: object | object[]; noindex?: boolean; crumbs?: Crumb[];
+  image?: string; ogType?: 'website' | 'article';
+}
+const { title, description, jsonLd, noindex = false, crumbs = [], image = SITE.ogImage, ogType = 'website' } = Astro.props;
+
+const brands = Object.values(networks).map((n) => n.brand).join(' or ');
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const abs = (p: string) => new URL(p, Astro.site).href;
+const ogImage = abs(image);
+
+// BreadcrumbList structured data (items without a link are skipped, except the current page)
+const items = [{ label: 'Home', href: '/' }, ...crumbs];
+const breadcrumbLd = crumbs.length
+  ? {
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: items
+        .filter((c, i) => c.href || i === items.length - 1)
+        .map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.label, item: c.href ? abs(c.href) : canonical.href })),
+    }
+  : null;
+const blocks = [...(Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : []), ...(breadcrumbLd ? [breadcrumbLd] : [])];
+const ld = (o: object) => JSON.stringify(o).replace(/</g, '\\u003c');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content={noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png?v=2" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <link rel="shortcut icon" href="/favicon.ico?v=2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
+    <meta name="apple-mobile-web-app-title" content={SITE.name} />
+    <link rel="manifest" href="/site.webmanifest?v=2" />
+
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:locale" content={SITE.locale} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={SITE.ogImageAlt} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={SITE.ogImageAlt} />
+
+    <script is:inline>
+      (() => {
+        let t; try { t = localStorage.getItem('theme'); } catch (e) {}
+        t = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    {blocks.map((b) => <script type="application/ld+json" set:html={ld(b)} />)}
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/"><img src="/icon.svg" alt="" width="28" height="28" /> Repair Finder</a>
+        <ThemeToggle />
+      </div>
+    </header>
+    <div class="wrap">
+      {crumbs.length > 0 && (
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          {crumbs.map((c) => (<><span aria-hidden="true">/</span>{c.href ? <a href={c.href}>{c.label}</a> : <span>{c.label}</span>}</>))}
+        </nav>
+      )}
+      <main><slot /></main>
+    </div>
+    <footer class="site-footer">
+      <div class="wrap">
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="/about/">About us</a>
+          <a href="/contact/">Contact us</a>
+          <a href="/privacy-policy/">Privacy policy</a>
+          <a href="/terms/">Terms and conditions</a>
+        </nav>
+        <p>Independent directory, not affiliated with or endorsed by {brands}. Always confirm details with the official source.</p>
+        <p>&copy; {new Date().getFullYear()} {SITE.name}</p>
+      </div>
+    </footer>
+  </body>
+</html>

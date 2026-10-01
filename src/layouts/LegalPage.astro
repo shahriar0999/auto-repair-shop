@@ -1,0 +1,12 @@
+---
+import Base from '@/layouts/Base.astro';
+interface Props { title: string; description: string; heading: string; crumb: string; updated?: string }
+const { title, description, heading, crumb, updated } = Astro.props;
+---
+<Base title={title} description={description} crumbs={[{ label: crumb }]}>
+  <article class="prose page">
+    <h1>{heading}</h1>
+    {updated && <p class="muted">Last updated: {updated}</p>}
+    <slot />
+  </article>
+</Base>

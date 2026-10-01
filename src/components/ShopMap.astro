@@ -1,0 +1,58 @@
+---
+interface Props { lat: number; lng: number; name: string }
+const { lat, lng, name } = Astro.props;
+---
+<div class="map-box" data-map data-lat={lat} data-lng={lng} role="region" aria-label={`Map showing ${name}`}>
+  <p class="map-ph">Map loads as you scroll</p>
+</div>
+<script>
+  const STYLES = {
+    light: 'https://tiles.openfreemap.org/styles/positron',
+    dark: 'https://tiles.openfreemap.org/styles/dark',
+  };
+  const box = document.querySelector<HTMLElement>('[data-map]')!;
+  const lat = Number(box.dataset.lat), lng = Number(box.dataset.lng);
+  const theme = () => (document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+
+  let darkOk: boolean | null = null;
+  async function styleUrl() {
+    if (theme() === 'light') return STYLES.light;
+    darkOk ??= await fetch(STYLES.dark, { method: 'HEAD' }).then((r) => r.ok).catch(() => false);
+    return darkOk ? STYLES.dark : STYLES.light;
+  }
+
+  // Used only if the interactive map cannot start (e.g. WebGL turned off)
+  function fallback() {
+    const d = 0.008;
+    const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d * 1.6},${lat - d},${lng + d * 1.6},${lat + d}&layer=mapnik&marker=${lat},${lng}`;
+    box.replaceChildren();
+    const f = document.createElement('iframe');
+    f.src = src; f.title = 'Map'; f.loading = 'lazy'; f.style.cssText = 'border:0;width:100%;height:100%';
+    box.append(f);
+  }
+
+  async function init() {
+    const [maplibregl] = await Promise.all([
+      import('maplibre-gl'),                       // v6 has named exports only, no default
+      import('maplibre-gl/dist/maplibre-gl.css'),
+    ]);
+    box.replaceChildren();
+    const map = new maplibregl.Map({
+      container: box, style: await styleUrl(), center: [lng, lat], zoom: 15,
+      cooperativeGestures: true,
+      attributionControl: { compact: true },
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    const pin = document.createElement('div'); pin.className = 'pin';
+    new maplibregl.Marker({ element: pin }).setLngLat([lng, lat]).addTo(map);
+    new MutationObserver(async () => map.setStyle(await styleUrl()))
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+
+  const io = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    io.disconnect();
+    init().catch((err) => { console.error('Map failed, using fallback:', err); fallback(); });
+  }, { rootMargin: '300px' });
+  io.observe(box);
+</script>

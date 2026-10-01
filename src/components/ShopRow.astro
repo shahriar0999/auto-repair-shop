@@ -1,0 +1,27 @@
+---
+import type { Shop } from '@/lib/types';
+const { shop: s } = Astro.props as { shop: Shop };
+const href = `/${s.network}/${s.stateSlug}/${s.citySlug}/${s.slug}/`;
+const words = s.name.replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+const initials = (words[0]?.[0] ?? '') + (words[1]?.[0] ?? '');
+const hue = [...s.sourceId].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
+const top = s.services.slice(0, 3);
+const more = s.services.length - top.length;
+const address = `${s.address1}, ${s.city}, ${s.state} ${s.zip}`;
+const directions = s.lat && s.lng
+  ? `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`
+  : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+---
+<article class="row">
+  <span class="mono" style={`--h:${hue}`} aria-hidden="true">{initials.toUpperCase()}</span>
+  <div class="row-main">
+    <h3><a class="row-link" href={href}>{s.name}</a></h3>
+    <p class="muted">{address}</p>
+    {top.length > 0 && <ul class="tags mini">{top.map((x) => <li>{x}</li>)}{more > 0 && <li>+{more} more</li>}</ul>}
+    {s.discount && <span class="badge">Member discount</span>}
+  </div>
+  <div class="row-actions">
+    {s.phone && <a class="pill" href={`tel:${s.phone}`}>Call</a>}
+    <a class="pill" href={directions} target="_blank" rel="noopener">Directions</a>
+  </div>
+</article>

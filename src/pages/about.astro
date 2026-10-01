@@ -1,0 +1,35 @@
+---
+import LegalPage from '@/layouts/LegalPage.astro';
+import { allShops } from '@/lib/shops';
+import { US_50 } from '@/lib/states';
+const shops = allShops();
+const states = new Set(shops.filter((s) => US_50.has(s.state)).map((s) => s.state)).size;
+---
+<LegalPage title="About Repair Finder: Auto Repair Shop Directory" description="Repair Finder is an independent directory of AAA approved auto repair shops and Toyota dealership service centers, with hours, services and directions." heading="About Repair Finder" crumb="About us">
+  <p>Repair Finder is an independent directory that helps drivers find an auto repair shop near them. We focus on two groups of locations: AAA Approved Auto Repair shops and Toyota dealership service centers. Right now the directory lists <strong>{shops.length.toLocaleString()} locations across {states} states</strong>, and more manufacturer networks may be added over time.</p>
+
+  <h2>Why we built it</h2>
+  <p>Searching for a repair shop usually means sorting through ads, map pins and star ratings that are hard to compare. We wanted one clean place where every location shows the same basic facts, so you can compare shops quickly and decide with confidence.</p>
+
+  <h2>What you will find on a listing</h2>
+  <ul>
+    <li>Address, phone number and a map, with one-tap directions.</li>
+    <li>Weekly hours and an open now indicator, calculated in the shop's own time zone, where hours are listed.</li>
+    <li>Repair services and the vehicle brands serviced, where the shop reports them.</li>
+    <li>The AAA member discount a shop lists, where there is one.</li>
+    <li>The date the listing was last checked, and a link to confirm details at the official source.</li>
+  </ul>
+
+  <h2>Where our information comes from</h2>
+  <p>We compile publicly available business information, such as names, addresses, phone numbers, hours and services, from public directories and official locators, and we organize it so it is easy to browse. Businesses change hours, services and programs often, so a listing can be out of date. Please call the shop and check with the official source before you rely on a detail.</p>
+
+  <h2>What we do not do</h2>
+  <ul>
+    <li>We do not repair vehicles or run any of the shops listed.</li>
+    <li>We do not rank shops, publish prices or write reviews. A listing is not an endorsement.</li>
+    <li>We are not affiliated with AAA or Toyota. Those names belong to their owners and are used only to describe the networks we list.</li>
+  </ul>
+
+  <h2>Spot a mistake?</h2>
+  <p>If an address, phone number or hour is wrong, or you own a listed business and want it updated or removed, tell us on the <a href="/contact/">contact page</a>. We review every request.</p>
+</LegalPage>

@@ -1,0 +1,45 @@
+---
+import LegalPage from '@/layouts/LegalPage.astro';
+import { SITE } from '@/lib/site';
+const mail = (subject: string) => `mailto:${SITE.email}?subject=${encodeURIComponent(subject)}`;
+const topics = [
+  { title: 'Report incorrect information', text: 'Wrong address, phone number, hours or services? Send the shop name, the page link and what should change.', subject: 'Listing correction' },
+  { title: 'Business owners', text: 'Ask us to update or remove your listing. Include your business name, address and a link to your official page.', subject: 'Business listing request' },
+  { title: 'General questions and feedback', text: 'Ideas, bugs or anything else about the site.', subject: 'Question or feedback' },
+  { title: 'Privacy requests', text: 'Ask about your personal information or request access, correction or deletion.', subject: 'Privacy request' },
+];
+---
+<LegalPage title="Contact Repair Finder: Corrections and Business Requests" description="Contact Repair Finder to report incorrect shop information, update or remove a business listing, or ask a question." heading="Contact us" crumb="Contact us">
+  <p>We read every message and reply when we can. Please do not send payment details, passwords or other sensitive information.</p>
+
+  <div class="cards">
+    {topics.map((t) => (
+      <div class="panel">
+        <h3>{t.title}</h3>
+        <p>{t.text}</p>
+        <a class="btn ghost" href={mail(t.subject)}>Email us</a>
+      </div>
+    ))}
+  </div>
+
+  <p>Email: <a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+
+  {SITE.formAction && (
+    <>
+      <h2>Send a message</h2>
+      <form class="contact-form" method="post" action={SITE.formAction}>
+        <label>Name <input name="name" required autocomplete="name" /></label>
+        <label>Email <input name="email" type="email" required autocomplete="email" /></label>
+        <label>Topic
+          <select name="topic">{topics.map((t) => <option>{t.title}</option>)}</select>
+        </label>
+        <label>Message <textarea name="message" required></textarea></label>
+        <input class="hp" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <button class="btn" type="submit">Send message</button>
+      </form>
+    </>
+  )}
+
+  <h2>Listing corrections</h2>
+  <p>To speed things up, include the page link, the exact detail that is wrong and, if you can, a link to an official page that shows the correct detail. Business owners should write from an address connected to the business when possible.</p>
+</LegalPage>

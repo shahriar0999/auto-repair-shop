@@ -1,0 +1,28 @@
+---
+import Base from '@/layouts/Base.astro';
+import { allShops, byCity } from '@/lib/shops';
+import { networks } from '@/lib/networks';
+import { stateSeo } from '@/lib/seo';
+
+export function getStaticPaths() {
+  const shops = allShops();
+  return [...new Set(shops.map((s) => `${s.network}/${s.stateSlug}`))].map((k) => {
+    const [network, state] = k.split('/');
+    return { params: { network, state }, props: { list: shops.filter((s) => s.network === network && s.stateSlug === state) } };
+  });
+}
+const { list } = Astro.props;
+const { network, state } = Astro.params;
+const net = networks[network as keyof typeof networks];
+const cities = [...byCity(list)].sort();
+const st = list[0].stateName;
+const seo = stateSeo(network!, st, list.length);
+---
+<Base title={seo.title} description={seo.description} crumbs={[{ label: net.short }, { label: st }]}>
+  <h1>{net.listing} in {st}</h1>
+  <p class="intro">{seo.intro}</p>
+  <p class="muted">{cities.length} {cities.length === 1 ? 'city' : 'cities'} listed.</p>
+  <ul class="chips">
+    {cities.map(([, l]) => (<li><a href={`/${network}/${state}/${l[0].citySlug}/`}>{l[0].city} <span class="muted">{l.length}</span></a></li>))}
+  </ul>
+</Base>

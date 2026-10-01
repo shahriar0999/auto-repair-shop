@@ -1,0 +1,53 @@
+---
+import LegalPage from '@/layouts/LegalPage.astro';
+import { SITE } from '@/lib/site';
+---
+<LegalPage title="Privacy Policy | Repair Finder" description="How Repair Finder handles information: what we collect, the third-party map services we use, and the choices you have." heading="Privacy policy" crumb="Privacy policy" updated={SITE.legalUpdated}>
+  <p>This policy explains what information {SITE.name} ("we", "us") collects when you use this website, how it is used, and the choices you have. In short: we do not require accounts, we do not sell personal information, and we currently do not run advertising or analytics tools on this site.</p>
+
+  <h2>Information we collect</h2>
+  <p><strong>Information you send us.</strong> If you email us or use a contact form, we receive your name, email address and message. We use it to reply and to handle your request.</p>
+  <p><strong>Information collected automatically.</strong> Like most websites, the servers that host this site record technical data such as IP address, browser type, the pages requested and the date and time. This is used to keep the site secure and working.</p>
+  <p><strong>Information stored in your browser.</strong> We save your light or dark theme choice in your browser's local storage so the site remembers it. It stays on your device and is not used to track you.</p>
+  <p>We do not ask for accounts, payment details or your precise location.</p>
+
+  <h2>Third-party services</h2>
+  <p><strong>Maps.</strong> When a map appears on a shop page, your browser requests map data from OpenFreeMap (tiles.openfreemap.org). If the interactive map cannot start on your device, we show an OpenStreetMap embed instead. These services can see your IP address and basic browser details as part of delivering the map, and their own policies apply.</p>
+  <p><strong>Links to other sites.</strong> Buttons such as Directions open Google Maps, and some pages link to shop websites or to AAA or Toyota. Once you leave our site, those sites' policies apply.</p>
+  <p>Fonts on this site are served from our own server, not from an outside font provider.</p>
+
+  <h2>Cookies</h2>
+  <p>We do not set advertising or tracking cookies. The third-party services above may set their own technical cookies or similar data when they load.</p>
+
+  <h2>How we use information</h2>
+  <ul>
+    <li>To reply to messages and handle correction, removal and privacy requests.</li>
+    <li>To operate, secure and improve the site.</li>
+    <li>To meet legal obligations.</li>
+  </ul>
+  <p>We do not sell your personal information or share it for advertising.</p>
+
+  <h2>Sharing</h2>
+  <p>We may share information with service providers that help us run the site, such as hosting and email providers, and when the law requires it or to protect our rights and users.</p>
+
+  <h2>Business listing information</h2>
+  <p>This directory shows business details that businesses make public, such as name, address, phone number and hours. If you own a listed business and want it corrected or removed, please use the <a href="/contact/">contact page</a>.</p>
+
+  <h2>How long we keep information</h2>
+  <p>We keep emails for as long as needed to deal with your request and to meet legal requirements. Server logs are kept by our hosting provider for a limited time.</p>
+
+  <h2>Your choices and rights</h2>
+  <p>Depending on where you live, such as California or the European Economic Area and the United Kingdom, you may have the right to ask what personal information we hold, and to ask us to correct it, delete it or limit how we use it. Email us to make a request. You can remove your saved theme choice at any time by clearing your browser's site data.</p>
+
+  <h2>Children</h2>
+  <p>This site is not directed to children under 13, and we do not knowingly collect their personal information.</p>
+
+  <h2>Security</h2>
+  <p>We take reasonable steps to protect information, but no website or method of transmission is completely secure.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If we change this policy, for example by adding analytics or advertising, we will update this page and the date at the top before the change takes effect.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about privacy? Email <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or visit our <a href="/contact/">contact page</a>.</p>
+</LegalPage>
