@@ -21,7 +21,7 @@ const { lat, lng, name } = Astro.props;
     return darkOk ? STYLES.dark : STYLES.light;
   }
 
-  // Used only if the interactive map cannot start (e.g. WebGL turned off)
+  // Plain OpenStreetMap embed, used when the interactive map cannot draw
   function fallback() {
     const d = 0.008;
     const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d * 1.6},${lat - d},${lng + d * 1.6},${lat + d}&layer=mapnik&marker=${lat},${lng}`;
@@ -33,7 +33,7 @@ const { lat, lng, name } = Astro.props;
 
   async function init() {
     const [maplibregl] = await Promise.all([
-      import('maplibre-gl'),                       // v6 has named exports only, no default
+      import('maplibre-gl'),
       import('maplibre-gl/dist/maplibre-gl.css'),
     ]);
     box.replaceChildren();
@@ -45,7 +45,25 @@ const { lat, lng, name } = Astro.props;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     const pin = document.createElement('div'); pin.className = 'pin';
     new maplibregl.Marker({ element: pin }).setLngLat([lng, lat]).addTo(map);
-    new MutationObserver(async () => map.setStyle(await styleUrl()))
+
+    // Safety net: if tiles fail, or nothing gets drawn, switch to the fallback map
+    let settled = false, dead = false, tileErrors = 0;
+    const giveUp = (why: string) => {
+      if (settled || dead) return;
+      dead = true; console.warn('Map fallback used:', why);
+      map.remove(); fallback();
+    };
+    map.on('error', (e: any) => {
+      console.warn('Map error:', e?.error?.message ?? e);
+      if (e?.sourceId && ++tileErrors >= 3) giveUp('tile requests failed');
+    });
+    map.once('idle', () => {
+      if (map.queryRenderedFeatures().length === 0) giveUp('nothing was drawn');
+      else settled = true;
+    });
+    setTimeout(() => { if (!settled && !dead && !map.areTilesLoaded()) giveUp('tiles took too long'); }, 8000);
+
+    new MutationObserver(async () => { if (!dead) map.setStyle(await styleUrl()); })
       .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   }
 
