@@ -7,5 +7,5 @@ export const SITE = {
   email: 'contact@nearautorepairshop.com',
   // Optional: paste a Formspree (or similar) form URL to turn on the contact form. Leave empty to show email links only.
   formAction: '',
-  legalUpdated: 'October 1, 2026',
+  legalUpdated: 'October 2, 2026',
 };

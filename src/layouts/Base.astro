@@ -72,6 +72,17 @@ const ld = (o: object) => JSON.stringify(o).replace(/</g, '\\u003c');
         document.documentElement.dataset.theme = t;
       })();
     </script>
+    {import.meta.env.PROD && (
+      <>
+        <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-G2W8LRJ7GJ"></script>
+        <script is:inline>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-G2W8LRJ7GJ');
+        </script>
+      </>
+    )}
     {blocks.map((b) => <script type="application/ld+json" set:html={ld(b)} />)}
   </head>
   <body>
