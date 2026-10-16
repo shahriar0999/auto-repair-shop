@@ -8,14 +8,22 @@ export const GET: APIRoute = ({ site }) => {
 
   for (const p of ['/', '/about/', '/contact/', '/privacy-policy/', '/terms/']) pages.set(p, '');
 
+  const cityCount = new Map<string, number>();
+  for (const s of shops) {
+    const k = `${s.network}/${s.stateSlug}/${s.citySlug}`;
+    cityCount.set(k, (cityCount.get(k) ?? 0) + 1);
+  }
+
   const newer = (a: string, b: string) => (a > b ? a : b);
   for (const s of shops) {
-    // Shop pages with no details are set to noindex, so keep them out of the sitemap
-    const hasDetails = Boolean(s.phone || s.services.length || (s.hours && Object.keys(s.hours).length));
+    // Toyota shop pages are noindex for now, and so are pages with no details
+    const hasDetails = Boolean(s.phone || s.services.length || (s.hours && Object.keys(s.hours).length)) && s.network !== 'toyota';
     const state = `/${s.network}/${s.stateSlug}/`;
     const city = `${state}${s.citySlug}/`;
+    const cityHasMany = (cityCount.get(`${s.network}/${s.stateSlug}/${s.citySlug}`) ?? 0) >= 2;
     pages.set(state, newer(pages.get(state) ?? '', s.lastVerified));
-    pages.set(city, newer(pages.get(city) ?? '', s.lastVerified));
+    // City pages with only one shop are noindex, so keep them out of the sitemap
+    if (cityHasMany) pages.set(city, newer(pages.get(city) ?? '', s.lastVerified));
     if (hasDetails) pages.set(`${city}${s.slug}/`, s.lastVerified);
   }
 

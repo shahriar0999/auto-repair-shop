@@ -23,7 +23,7 @@ const directions = s.lat && s.lng
   : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 
 const hoursList = DAYS.filter((d) => s.hours?.[d]).map((d) => [d, s.hours![d]] as const);
-const hasDetails = Boolean(s.phone || s.services.length || hoursList.length);
+const hasDetails = Boolean(s.phone || s.services.length || hoursList.length) && s.network !== 'toyota';
 const spec = hoursList.flatMap(([d, t]) => {
   const r = parseRange(t);
   return r ? [{ '@type': 'OpeningHoursSpecification', dayOfWeek: d, opens: hhmm(r.open), closes: hhmm(r.close) }] : [];

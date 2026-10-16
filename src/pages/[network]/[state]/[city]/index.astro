@@ -19,7 +19,7 @@ const net = networks[network as keyof typeof networks];
 const count = `${list.length} ${net.noun}${list.length === 1 ? '' : 's'}`;
 const seo = citySeo(network!, city, st, list.length);
 ---
-<Base title={seo.title} description={seo.description} crumbs={[{ label: net.short }, { label: stateName, href: `/${network}/${state}/` }, { label: city }]}>
+<Base title={seo.title} description={seo.description} noindex={list.length < 2} crumbs={[{ label: net.short }, { label: stateName, href: `/${network}/${state}/` }, { label: city }]}>
   <h1 style="font-size:clamp(2rem,1.3rem + 3vw,3.25rem)">{net.listing} in {city}, {st}</h1>
   <p class="intro">{seo.intro}</p>
 
