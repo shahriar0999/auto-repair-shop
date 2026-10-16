@@ -5,7 +5,8 @@ import ShopRow from '@/components/ShopRow.astro';
 import { allShops } from '@/lib/shops';
 import { networks } from '@/lib/networks';
 import { DAYS, parseRange, hhmm } from '@/lib/hours';
-import { shopSeo } from '@/lib/seo';
+import { shopSeo, trunc } from '@/lib/seo';
+import { shopSummary, shopDescription, shopFaqs, nearbyCities } from '@/lib/shopCopy';
 
 export function getStaticPaths() {
   const shops = allShops();
@@ -18,6 +19,10 @@ const { shop: s, nearby } = Astro.props;
 const net = networks[s.network as keyof typeof networks];
 const address = `${s.address1}, ${s.city}, ${s.state} ${s.zip}`;
 const seo = shopSeo(s.network, s.name, s.city, s.state, address);
+const summary = shopSummary(s);
+const faqs = shopFaqs(s);
+const around = nearbyCities(s, allShops());
+const reviewsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${s.name} ${address}`)}`;
 const directions = s.lat && s.lng
   ? `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`
   : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
@@ -36,17 +41,19 @@ const jsonLd = {
   ...(spec.length > 0 && { openingHoursSpecification: spec }),
 };
 ---
-<Base title={seo.title} description={seo.description} jsonLd={jsonLd} noindex={!hasDetails}
+<Base title={seo.title} description={s.network === 'aaa' ? trunc(shopDescription(s)) : seo.description} jsonLd={jsonLd} noindex={!hasDetails}
   crumbs={[{ label: net.short }, { label: s.stateName, href: `/${s.network}/${s.stateSlug}/` }, { label: s.city, href: `/${s.network}/${s.stateSlug}/${s.citySlug}/` }, { label: s.name }]}>
   <div class="shop">
     <div>
       <h1>{s.name}</h1>
       <p class="muted">{address}</p>
+      <p class="intro">{summary}</p>
       <p class="status" id="open-status" role="status" hidden></p>
       <div class="actions">
         {s.phone && <a class="btn" href={`tel:${s.phone}`}>Call {s.phone}</a>}
         <a class="btn ghost" href={directions} rel="noopener" target="_blank">Get directions</a>
         {s.website && <a class="btn ghost" href={s.website} rel="noopener nofollow" target="_blank">Website</a>}
+        <a class="btn ghost" href={reviewsUrl} rel="noopener nofollow" target="_blank">Reviews on Google Maps</a>
       </div>
       {!hoursList.length && !s.services.length && <p class="muted">Hours and services aren't listed for this location yet.{s.phone ? ' Call to confirm.' : ''}</p>}
       {s.services.length > 0 && (<><h2>Repair services</h2><ul class="tags">{s.services.map((x) => <li>{x}</li>)}</ul></>)}
@@ -77,6 +84,19 @@ const jsonLd = {
     </aside>
   </div>
   {nearby.length > 0 && (<><h2 style="margin-top:3rem">Other {net.noun}s in {s.city}</h2><ul class="rows">{nearby.map((n) => <li><ShopRow shop={n} /></li>)}</ul></>)}
+
+  {faqs.length > 0 && (
+    <section class="faq" aria-labelledby="shop-faq">
+      <h2 id="shop-faq">Questions about {s.name}</h2>
+      {faqs.map((f) => (<details><summary>{f.q}</summary><p>{f.a}</p></details>))}
+    </section>
+  )}
+  {around.length > 0 && (
+    <>
+      <h2 style="margin-top:3rem">Nearby cities with {net.short} {net.noun}s</h2>
+      <ul class="tags">{around.map((c) => <li><a href={c.href}>{c.label}</a> <span class="muted">({c.miles} mi)</span></li>)}</ul>
+    </>
+  )}
 
   <script>
     import { openStatus } from '@/lib/hours';
